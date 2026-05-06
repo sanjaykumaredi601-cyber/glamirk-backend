@@ -54,7 +54,7 @@ app.use(cors({
     credentials: true
 }));
 
-app.options("*", cors());
+app.options("(.*)", cors());
 app.use(express.json({ limit: '10kb' })); 
 app.use(helmet({
     crossOriginResourcePolicy: false, // Required for cross-origin image loading
@@ -69,6 +69,10 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         console.log('User disconnected');
     });
+});
+
+app.get('/', (req, res) => {
+    res.json({ status: 'API running' });
 });
 
 // Routes
@@ -198,6 +202,10 @@ app.post('/api/create-order', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Failed to create Razorpay order' });
     }
+});
+
+app.use((req, res) => {
+    res.status(404).json({ message: 'Route not found' });
 });
 
 // Seeding Categories if missing
