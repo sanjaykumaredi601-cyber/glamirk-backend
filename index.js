@@ -54,7 +54,7 @@ app.use(cors({
     credentials: true
 }));
 
-app.options("(.*)", cors());
+// CORS preflight handled by app.use(cors()) above
 app.use(express.json({ limit: '10kb' })); 
 app.use(helmet({
     crossOriginResourcePolicy: false, // Required for cross-origin image loading
@@ -205,7 +205,10 @@ app.post('/api/create-order', async (req, res) => {
 });
 
 app.use((req, res) => {
-    res.status(404).json({ message: 'Route not found' });
+    res.status(404).json({
+        success: false,
+        message: "Route not found"
+    });
 });
 
 // Seeding Categories if missing
