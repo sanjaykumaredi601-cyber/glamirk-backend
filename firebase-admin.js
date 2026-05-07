@@ -1,21 +1,27 @@
 import admin from 'firebase-admin';
-import dotenv from 'dotenv';
 
-dotenv.config({ path: '../.env.local' });
-dotenv.config({ path: '../.env' });
-
-try {
-  if (!admin.apps.length) {
-    admin.initializeApp({
-      projectId: process.env.VITE_FIREBASE_PROJECT_ID || 'glamirk-a2c47'
-    });
-    console.log('Firebase Admin SDK initialized successfully');
+if (!admin.apps.length) {
+  if (
+    !process.env.FIREBASE_PROJECT_ID ||
+    !process.env.FIREBASE_CLIENT_EMAIL ||
+    !process.env.FIREBASE_PRIVATE_KEY
+  ) {
+    throw new Error("❌ Firebase ENV variables missing");
   }
-} catch (error) {
-  console.error('Firebase Admin initialization error:', error.message);
+
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    }),
+  });
+
+  console.log("✅ Firebase Admin connected successfully");
 }
 
 export const db = admin.firestore();
+export { admin };
 
 // --- LOCAL DEV IN-MEMORY CACHE ---
 // This allows the CMS to persist changes during the current session
