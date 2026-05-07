@@ -131,5 +131,5 @@ export const setWithCache = async (ref, data) => {
   }
 };
 
-export { admin, localCmsCache };
+export { localCmsCache };
 
