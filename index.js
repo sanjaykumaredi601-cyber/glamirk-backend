@@ -31,27 +31,26 @@ const io = new Server(httpServer, {
 app.use(cookieParser());
 
 const allowedOrigins = [
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "https://glamirk-a2c47.web.app",
-    "https://glamirk-a2c47.firebaseapp.com",
-    "https://glamirk.com",
-    "https://www.glamirk.com"
+  "http://localhost:5173",
+  "https://glamirk-prod.web.app",
+  "https://glamirk-prod.firebaseapp.com",
+  "https://www.glamirk.com",
+  "https://glamirk.com",
 ];
 
 app.use(cors({
-    origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl)
-        if (!origin) return callback(null, true);
-        
-        if (allowedOrigins.includes(origin)) {
-            return callback(null, true);
-        } else {
-            console.error("CORS blocked:", origin);
-            return callback(new Error("Not allowed by CORS"));
-        }
-    },
-    credentials: true
+  origin: function(origin, callback) {
+    // allow server-to-server or Postman requests
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.error("CORS blocked:", origin);
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true
 }));
 
 // CORS preflight handled by app.use(cors()) above
