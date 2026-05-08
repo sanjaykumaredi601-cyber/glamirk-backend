@@ -337,4 +337,92 @@ router.get('/all', verifyAuth, requireAdmin('admins.manage'), async (req, res) =
   }
 });
 
+// @desc    Create new admin
+router.post('/create', verifyAuth, requireAdmin('admins.manage'), async (req, res) => {
+  try {
+    const { email, password, role, permissions } = req.body;
+    
+    if (!email || !password || !role) {
+      return res.status(400).json({ error: 'Email, password and role are required' });
+    }
+
+    // 1. Create user in Firebase Auth
+    const userRecord = await admin.auth().createUser({
+      email,
+      password,
+      emailVerified: true
+    });
+
+    // 2. Create admin document in Firestore
+    const adminData = {
+      uid: userRecord.uid,
+      email: email.toLowerCase(),
+      role: role === 'super_admin' ? 'super_admin' : 'admin',
+      permissions: role === 'super_admin' ? ['*'] : (permissions || []),
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+
+    await db.collection('admins').doc(userRecord.uid).set(adminData);
+    
+    res.json({ success: true, message: 'Admin created successfully' });
+  } catch (error) {
+    console.error('Error creating admin:', error);
+    res.status(500).json({ error: error.message || 'Failed to create admin' });
+  }
+});
+
+// @desc    Update admin role/permissions
+router.put('/update/:email', verifyAuth, requireAdmin('admins.manage'), async (req, res) => {
+  try {
+    const { email } = req.params;
+    const { role, permissions } = req.body;
+
+    const snapshot = await db.collection('admins').where('email', '==', email.toLowerCase()).get();
+    if (snapshot.empty) return res.status(404).json({ error: 'Admin not found' });
+
+    const adminDoc = snapshot.docs[0];
+    const updates = {
+      role: role === 'super_admin' ? 'super_admin' : 'admin',
+      permissions: role === 'super_admin' ? ['*'] : (permissions || []),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+
+    await adminDoc.ref.update(updates);
+    res.json({ success: true, message: 'Admin updated successfully' });
+  } catch (error) {
+    console.error('Error updating admin:', error);
+    res.status(500).json({ error: 'Failed to update admin' });
+  }
+});
+
+// @desc    Remove admin
+router.delete('/:email', verifyAuth, requireAdmin('admins.manage'), async (req, res) => {
+  try {
+    const { email } = req.params;
+    
+    // Prevent self-deletion if needed (logic can be added here)
+    
+    const snapshot = await db.collection('admins').where('email', '==', email.toLowerCase()).get();
+    if (snapshot.empty) return res.status(404).json({ error: 'Admin not found' });
+
+    const adminDoc = snapshot.docs[0];
+    const uid = adminDoc.data().uid;
+
+    // 1. Delete from Firebase Auth
+    try {
+      await admin.auth().deleteUser(uid);
+    } catch (e) {
+      console.warn('Auth user deletion failed (may already be deleted):', e.message);
+    }
+
+    // 2. Delete Firestore doc
+    await adminDoc.ref.delete();
+    
+    res.json({ success: true, message: 'Admin removed successfully' });
+  } catch (error) {
+    console.error('Error removing admin:', error);
+    res.status(500).json({ error: 'Failed to remove admin' });
+  }
+});
+
 export default router;
