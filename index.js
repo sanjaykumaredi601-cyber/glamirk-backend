@@ -32,6 +32,9 @@ app.use(cookieParser());
 
 const allowedOrigins = [
   "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:5175",
+  "http://localhost:5176",
   "https://glamirk-prod.web.app",
   "https://glamirk-prod.firebaseapp.com",
   "https://www.glamirk.com",
