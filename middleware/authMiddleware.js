@@ -20,7 +20,9 @@ export const verifyAuth = async (req, res, next) => {
   }
 };
 
-export const requireAdmin = (...permissions) => {
+import { hasPermission } from '../utils/permissions.js';
+
+export const requireAdmin = (requiredPermission = null) => {
   return async (req, res, next) => {
     try {
       console.log('requireAdmin: req.user is', req.user);
@@ -40,12 +42,11 @@ export const requireAdmin = (...permissions) => {
           adminSnap = await getWithTimeout(adminRef);
         }
       } catch (err) {
-        // Broad catch for any Firestore auth/credential/permission error locally
         console.warn('[LOCAL DEV FALLBACK] Bypassing Firestore error:', err.message);
         req.admin = {
           uid: uid,
           email: email || 'superadmin@glamirk.com',
-          role: 'super_admin',
+          role: 'superadmin',
           permissions: ['*']
         };
         return next();
@@ -68,14 +69,14 @@ export const requireAdmin = (...permissions) => {
         permissions: adminData.permissions || []
       };
 
-      if (permissions.length > 0) {
-        if (req.admin.role === 'super_admin') {
-          return next();
-        }
-        const hasPermission = permissions.every(p => req.admin.permissions.includes(p));
-        if (!hasPermission) {
-          return res.status(403).json({ error: `User role ${req.admin.role} is not authorized` });
-        }
+      // USE CENTRALIZED HELPER
+      if (!hasPermission(req.admin, requiredPermission)) {
+        console.error(`[AUTH FAILURE] User ${req.admin.email} (Role: ${req.admin.role}) lacks permission: ${requiredPermission}`);
+        return res.status(403).json({ 
+          success: false,
+          error: `User role ${req.admin.role} is not authorized for this action`,
+          requiredPermission
+        });
       }
 
       next();

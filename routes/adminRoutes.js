@@ -255,18 +255,13 @@ router.get('/cms/categories', verifyAuth, requireAdmin('cms.read'), async (req, 
   try {
     let snapshot = await getWithTimeout(db.collection('categories').orderBy('order', 'asc'));
     
-    // Sync missing ones and metadata on fetch
+    // Only seed if document is completely missing
     for (const cat of localCategories) {
       const docRef = db.collection('categories').doc(cat.slug);
       const doc = await docRef.get();
       if (!doc.exists) {
         console.log(`[CMS] Seeding missing category: ${cat.slug}`);
         await docRef.set({ ...cat, createdAt: admin.firestore.FieldValue.serverTimestamp() });
-      } else {
-        const data = doc.data();
-        if (data.order !== cat.order || data.name !== cat.name) {
-           await docRef.update({ order: cat.order, name: cat.name });
-        }
       }
     }
     snapshot = await getWithTimeout(db.collection('categories').orderBy('order', 'asc'));

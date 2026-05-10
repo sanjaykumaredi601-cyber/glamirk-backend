@@ -15,6 +15,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "adm-zip": "^0.5.17",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
@@ -27,8 +28,11 @@
     "helmet": "^8.1.0",
     "joi": "^18.1.2",
     "jsonwebtoken": "^9.0.3",
-    "openai": "^6.33.0",
+    "multer": "^2.1.1",
+    "openai": "^6.37.0",
     "razorpay": "^2.9.6",
-    "socket.io": "^4.8.3"
+    "sharp": "^0.34.5",
+    "socket.io": "^4.8.3",
+    "xlsx": "^0.18.5"
   }
 }

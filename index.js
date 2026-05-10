@@ -10,13 +10,27 @@ import { Server } from 'socket.io';
 
 import adminRoutes from './routes/adminRoutes.js';
 import ticketRoutes from './routes/ticketRoutes.js';
-import { db, getWithTimeout } from './firebase-admin.js';
+import importRoutes from './routes/importRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
+import productAdminRoutes from './routes/productAdminRoutes.js';
+import { db, admin, getWithTimeout } from './firebase-admin.js';
 import localProducts from './data/products.js';
 import localCategories from './data/categories.js';
 import categoryImageOverrides, { isBrokenUrl } from './categoryStore.js';
 
 dotenv.config({ path: '../.env.local' });
 dotenv.config({ path: '../.env' });
+
+// ==================================================
+// STEP 1 — VERIFY ENV
+// ==================================================
+if (!process.env.OPENROUTER_API_KEY) {
+    console.warn('\n==================================================');
+    console.warn('⚠️ WARNING: OPENROUTER_API_KEY is missing!');
+    console.warn('AI features (shade naming, descriptions) will gracefully fallback to local generation.');
+    console.warn('The server will not crash and operations will continue normally.');
+    console.warn('==================================================\n');
+}
 
 const app = express();
 const httpServer = createServer(app);
@@ -57,7 +71,8 @@ app.use(cors({
 }));
 
 // CORS preflight handled by app.use(cors()) above
-app.use(express.json({ limit: '10kb' })); 
+app.use(express.json({ limit: '50mb' })); 
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(helmet({
     crossOriginResourcePolicy: false, // Required for cross-origin image loading
 }));
@@ -80,6 +95,9 @@ app.get('/', (req, res) => {
 // Routes
 app.use('/api/admin', adminRoutes);
 app.use('/api/tickets', ticketRoutes);
+app.use('/api/import', importRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/admin/products', productAdminRoutes);
 
 // Public CMS Route
 app.get('/api/cms', async (req, res) => {
@@ -160,50 +178,26 @@ app.get('/api/categories', async (req, res) => {
     }
 });
 
-const openai = process.env.OPENAI_API_KEY ? new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-}) : null;
+import aiService from './services/openaiService.js';
 
 const razorpay = (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) ? new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID,
     key_secret: process.env.RAZORPAY_KEY_SECRET,
 }) : null;
 
-const SYSTEM_PROMPT = `You are the Glamirk Luxury Concierge...`;
-
 app.post('/api/chat', async (req, res) => {
     const { messages } = req.body;
-    if (!openai) return res.json({ message: "I am the Glamirk Luxury Concierge. How may I assist you today?" });
     try {
-        const response = await openai.chat.completions.create({
-            model: 'gpt-4o',
-            messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
-            temperature: 0.7,
-        });
-        const reply = response.choices[0].message.content;
-        if (reply.toLowerCase().includes('priority support ticket') || reply.toLowerCase().includes('escalate')) {
-            res.json({ message: reply, autoEscalate: true });
-            return;
-        }
-        res.json({ message: reply });
+        const result = await aiService.chatWithConcierge(messages);
+        res.json(result);
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch AI response' });
     }
 });
 
-app.post('/api/create-order', async (req, res) => {
-    try {
-        const { amount, currency = 'INR', receipt } = req.body;
-        if (!razorpay) return res.status(503).json({ error: 'Razorpay is not configured' });
-        const order = await razorpay.orders.create({
-            amount: Math.round(amount * 100),
-            currency,
-            receipt: receipt || `receipt_${Date.now()}`,
-        });
-        res.json(order);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to create Razorpay order' });
-    }
+// Legacy create-order (deprecated, move to /api/payments/create-order)
+app.post('/api/create-order', (req, res) => {
+    res.redirect(307, '/api/payments/create-order');
 });
 
 app.use((req, res) => {
@@ -253,3 +247,4 @@ httpServer.listen(PORT, () => {
 
 process.on('unhandledRejection', (err) => { console.error('UNHANDLED REJECTION!', err); });
 process.on('uncaughtException', (err) => { console.error('UNCAUGHT EXCEPTION!', err); });
+// trigger restart

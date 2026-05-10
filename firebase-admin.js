@@ -21,6 +21,7 @@ if (!admin.apps.length) {
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
       privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n').replace(/"/g, ''),
     }),
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
   });
 
   console.log("✅ Firebase Admin connected successfully");
@@ -32,61 +33,8 @@ export { admin };
 // --- LOCAL DEV IN-MEMORY CACHE ---
 // This allows the CMS to persist changes during the current session
 // even if Firestore credentials are missing locally.
-// Pre-seeded with default ambassador data so the public API works from cold start.
 const localCmsCache = {
-  homepage: {
-    hero: {
-      banners: [
-        { 
-          id: 'b1', 
-          url: 'https://firebasestorage.googleapis.com/v0/b/glamirk-a2c47.firebasestorage.app/o/GlamirkBanner%2FB2ww1.jpeg?alt=media&token=bec6b345-ab9f-49ac-9cc1-4cd782bd2c68', 
-          title: 'Melt. Transform.\nReveal.',
-          subtitle: 'A new ritual in cleansing — where balm transforms into water.',
-          ctaText: 'Shop Now',
-          ctaLink: '/shop',
-          position: '65% center',
-          order: 1 
-        },
-        { 
-          id: 'b2', 
-          url: 'https://firebasestorage.googleapis.com/v0/b/glamirk-a2c47.firebasestorage.app/o/GlamirkBanner%2FB2ww.jpeg?alt=media&token=21e801af-23b5-4067-8571-fd82cb666d15', 
-          title: 'Pure Luxury.',
-          subtitle: 'Experience the golden standard of skincare.',
-          ctaText: 'Explore Collection',
-          ctaLink: '/shop',
-          position: 'center center',
-          order: 2 
-        }
-      ]
-    },
-    ambassadors: {
-      enabled: true,
-      list: [
-        {
-          id: 'a1',
-          image: 'https://firebasestorage.googleapis.com/v0/b/glamirk-a2c47.firebasestorage.app/o/GlamirkBanner%2FB2ww1.jpeg?alt=media&token=bec6b345-ab9f-49ac-9cc1-4cd782bd2c68',
-          name: 'Selena Gomez',
-          title: 'The New Frontier of Beauty.',
-          description: 'Discover the collection curated by our global ambassador. A fusion of elegance and modern skincare innovation.',
-          ctaText: 'Shop the Edit',
-          ctaLink: '/shop',
-          alignment: 'right'
-        },
-        {
-          id: 'a2',
-          image: 'https://firebasestorage.googleapis.com/v0/b/glamirk-a2c47.firebasestorage.app/o/GlamirkBanner%2FB2ww.jpeg?alt=media&token=21e801af-23b5-4067-8571-fd82cb666d15',
-          name: 'Zendaya',
-          title: 'Redefining Luxury Skincare.',
-          description: 'Every product tells a story of sophistication and radiance. Experience the art of self-care.',
-          ctaText: 'Explore Collection',
-          ctaLink: '/shop',
-          alignment: 'left'
-        }
-      ]
-    },
-    featuredProductId: 'balm-to-water',
-    sections: []
-  },
+  homepage: null,
   pages: null,
   siteSettings: null
 };
