@@ -87,24 +87,14 @@ export const generateLuxuryShadeName = async (hex, productType, imageBase64 = nu
     let messages = [
       {
         role: "system",
-        content: `You are a senior beauty industry copywriter for Glamirk, a luxury cosmetic brand similar to Dior Beauty, Sephora, or Charlotte Tilbury. Your ONLY output should be a sophisticated, high-end shade name (e.g., 'Crimson Velvet', 'Nude Satin', 'Midnight Muse'). Output ONLY JSON: {"shade": "Name", "color": "#HEX"}`
+        content: `You are a senior beauty industry copywriter for Glamirk, a luxury cosmetic brand. Your ONLY output should be a sophisticated, high-end shade name (e.g., 'Crimson Velvet', 'Nude Satin', 'Midnight Muse'). Output ONLY JSON: {"shade": "Name", "color": "#HEX"}. NEVER use file paths, numbers, or technical labels.`
       }
     ];
 
-    if (imageBase64) {
-      messages.push({
-        role: "user",
-        content: [
-          { type: "text", text: `Analyze this product image. Ignore white/gray backgrounds. Product Type: ${productType}. Dominant Hex: ${hex}. Identify the precise cosmetic pigment color and return the luxury shade name and hex.` },
-          { type: "image_url", image_url: { url: imageBase64 } }
-        ]
-      });
-    } else {
-      messages.push({
-        role: "user",
-        content: `Product Type: ${productType}. Dominant Hex: ${hex}. Provide the luxury shade name.`
-      });
-    }
+    messages.push({
+      role: "user",
+      content: `Product Type: ${productType}. Dominant Hex Detected: ${hex}. Provide the luxury shade name and a slightly refined luxury hex color if needed.`
+    });
 
     const response = await executeWithRetry(() => openai.chat.completions.create({
       model: MODEL,

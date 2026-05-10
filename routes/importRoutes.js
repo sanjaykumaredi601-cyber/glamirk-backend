@@ -103,6 +103,7 @@ const getDominantColor = async (buffer) => {
   try {
     const { data, info } = await sharp(buffer)
       .resize(200, 200, { fit: 'cover' })
+      .flatten({ background: '#FFFFFF' }) // Fix transparent to black issue
       .raw()
       .toBuffer({ resolveWithObject: true });
 
