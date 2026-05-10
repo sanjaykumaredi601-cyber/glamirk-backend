@@ -113,8 +113,19 @@ export const generateLuxuryShadeName = async (hex, productType, imageBase64 = nu
       response_format: { type: "json_object" }
     }));
 
-    const result = JSON.parse(response.choices[0].message.content);
-    console.log(`[AI Service] Generated Shade: ${result.shade} in ${Date.now() - startTime}ms. Usage: ${response.usage.total_tokens} tokens.`);
+    let result;
+    try {
+      // Remove any potential markdown code blocks like ```json ... ``` that some models output
+      let content = response.choices[0].message.content.trim();
+      if (content.startsWith('```json')) content = content.substring(7);
+      if (content.endsWith('```')) content = content.substring(0, content.length - 3).trim();
+      
+      result = JSON.parse(content);
+    } catch (parseError) {
+      console.warn('[AI Service] Failed to parse JSON from AI response:', response.choices[0].message.content);
+      throw new Error('Invalid JSON response');
+    }
+    console.log(`[AI Service] Generated Shade: ${result.shade} in ${Date.now() - startTime}ms. Usage: ${response.usage?.total_tokens || 'unknown'} tokens.`);
     return result;
   };
 
@@ -156,8 +167,18 @@ export const generateProductMetadata = async (productName, category, variants) =
       response_format: { type: "json_object" }
     }));
 
-    const result = JSON.parse(response.choices[0].message.content);
-    console.log(`[AI Service] Generated Metadata for ${productName} in ${Date.now() - startTime}ms. Usage: ${response.usage.total_tokens} tokens.`);
+    let result;
+    try {
+      let content = response.choices[0].message.content.trim();
+      if (content.startsWith('```json')) content = content.substring(7);
+      if (content.endsWith('```')) content = content.substring(0, content.length - 3).trim();
+      
+      result = JSON.parse(content);
+    } catch (parseError) {
+      console.warn('[AI Service] Failed to parse JSON for metadata:', response.choices[0].message.content);
+      throw new Error('Invalid JSON response');
+    }
+    console.log(`[AI Service] Generated Metadata for ${productName} in ${Date.now() - startTime}ms. Usage: ${response.usage?.total_tokens || 'unknown'} tokens.`);
     return result;
   };
 
